@@ -68,8 +68,8 @@ def LPTic(grid, BoxSize, z, Omega_m, kLin, PLin, n_LPT=2, seed=0):
 
     np.random.seed(seed)
     delta_r = np.random.normal(0, 1, (grid, grid, grid))
-    delta_k = np.fft.rfftn(delta_r, norm='ortho') * sqrtPgrid
-    delta_r = np.fft.irfftn(delta_k, norm='ortho')
+    delta_k = np.fft.rfftn(delta_r) * sqrtPgrid
+    delta_r = np.fft.irfftn(delta_k)
 
     kgrid[0,0,0] = 1.
     inv_k2 = 1/kgrid**2.
@@ -77,7 +77,7 @@ def LPTic(grid, BoxSize, z, Omega_m, kLin, PLin, n_LPT=2, seed=0):
 
     #### 1LPT ####
     Psi_1LPT_k = - 1.j * phi_k * kmesh
-    Psi_1LPT_r = np.fft.irfftn(Psi_1LPT_k, norm='ortho', axes=(-3,-2,-1))
+    Psi_1LPT_r = np.fft.irfftn(Psi_1LPT_k, axes=(-3,-2,-1))
 
     #### 2LPT ####
     if n_LPT > 1:
@@ -85,9 +85,9 @@ def LPTic(grid, BoxSize, z, Omega_m, kLin, PLin, n_LPT=2, seed=0):
     
         # Pad to prevent aliasing
         phi_dxdx = np.fft.fftshift(phi_dxdx, axes=(-3,-2))
-        phi_dxdx = np.pad(phi_dxdx, ((0,0), (0,0), (grid//4, grid//4), (grid//4, grid//4), (0, grid//4)),constant_values=0.+0.j)
+        phi_dxdx = np.pad(phi_dxdx, ((0,0), (0,0), (grid//4, grid//4), (grid//4, grid//4), (0, grid//4)),constant_values=0.+0.j) * (3/2)**3.
         phi_dxdx = np.fft.ifftshift(phi_dxdx, axes=(-3,-2))
-        phi_dxdx = np.fft.irfftn(phi_dxdx, axes=(-3,-2,-1), norm='ortho')
+        phi_dxdx = np.fft.irfftn(phi_dxdx, axes=(-3,-2,-1))
     
         # Compute 2LPT potential
         phi_2LPT = phi_dxdx[0,0]*phi_dxdx[1,1] - phi_dxdx[0,1]**2.
@@ -97,7 +97,7 @@ def LPTic(grid, BoxSize, z, Omega_m, kLin, PLin, n_LPT=2, seed=0):
     
         # Downsample after antialiased products
         phi_2LPT = np.fft.fftshift(phi_2LPT, axes=(-3,-2))
-        phi_2LPT = phi_2LPT[grid//4:-grid//4, grid//4:-grid//4,:-grid//4]
+        phi_2LPT = phi_2LPT[grid//4:-grid//4, grid//4:-grid//4,:-grid//4] / (3/2)**3.
         phi_2LPT = np.fft.ifftshift(phi_2LPT, axes=(-3,-2))    
     
         Psi_2LPT_r = -3/7 * np.fft.irfftn(- 1.j * phi_2LPT * kmesh * inv_k2, axes=(-3,-2,-1),)
